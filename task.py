@@ -17,7 +17,7 @@ from datetime import datetime
 st.set_page_config(page_title="창의적 글쓰기 with AI", page_icon="✍️", layout="wide")
 
 ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages"
-MODEL_NAME = "claude-sonnet-4-6"
+MODEL_NAME = "claude-sonnet-5"
 
 # Streamlit Cloud > App settings > Secrets 에 아래처럼 등록해서 사용하세요.
 # ANTHROPIC_API_KEY = "sk-ant-xxxxxxxx"
