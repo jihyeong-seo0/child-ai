@@ -21,7 +21,25 @@ MODEL_NAME = "claude-sonnet-5"
 
 # Streamlit Cloud > App settings > Secrets 에 아래처럼 등록해서 사용하세요.
 # ANTHROPIC_API_KEY = "sk-ant-xxxxxxxx"
-API_KEY = st.secrets.get("ANTHROPIC_API_KEY", "")
+API_KEY = st.secrets.get("ANTHROPIC_API_KEY", "").strip()
+
+
+def validate_api_key(key: str):
+    """API 키에 문제가 있으면 사용자에게 보여줄 메시지를 반환하고, 문제 없으면 None을 반환."""
+    if not key:
+        return "API 키가 설정되어 있지 않습니다. Secrets에 ANTHROPIC_API_KEY를 등록해 주세요."
+    try:
+        key.encode("ascii")
+    except UnicodeEncodeError:
+        return (
+            "API 키에 일반 문자가 아닌 특수문자(예: 하이픈이 대시(–)로, "
+            "따옴표가 스마트 따옴표로 자동 변환됨)가 섞여 있습니다. "
+            "Secrets에서 키를 지우고 메모장 등 서식 없는 곳에 붙여넣은 뒤 다시 등록해 주세요."
+        )
+    return None
+
+
+API_KEY_ERROR = validate_api_key(API_KEY)
 
 # ----------------------------
 # 세션 상태 초기화
@@ -73,6 +91,11 @@ def call_claude_api(conversation_history, system_prompt, api_key):
     except urllib.error.HTTPError as e:
         err_body = e.read().decode("utf-8")
         return f"[API 오류: {e.code}] {err_body}"
+    except UnicodeEncodeError:
+        return (
+            "[오류 발생] API 키에 특수문자가 섞여 있어 요청을 보낼 수 없습니다. "
+            "Secrets에서 API 키를 다시 확인해 주세요."
+        )
     except Exception as e:
         return f"[오류 발생] {e}"
 
@@ -151,8 +174,8 @@ with st.sidebar:
     else:
         st.caption("아직 기록된 대화가 없습니다.")
 
-    if not API_KEY:
-        st.warning("Secrets에 ANTHROPIC_API_KEY가 설정되어 있지 않습니다.")
+    if API_KEY_ERROR:
+        st.warning(API_KEY_ERROR)
 
 
 # ----------------------------
@@ -174,8 +197,8 @@ for msg in st.session_state.messages:
 user_input = st.chat_input("AI에게 도움을 요청하거나, 이야기를 이어서 작성해 보세요.")
 
 if user_input:
-    if not API_KEY:
-        st.error("API 키가 설정되어 있지 않아 요청을 보낼 수 없습니다. Secrets를 확인해 주세요.")
+    if API_KEY_ERROR:
+        st.error(API_KEY_ERROR)
     else:
         if st.session_state.task_started_at is None:
             st.session_state.task_started_at = datetime.now().isoformat()
